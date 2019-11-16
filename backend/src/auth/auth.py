@@ -1,12 +1,12 @@
-import json
-from flask import request, _request_ctx_stack
 from functools import wraps
-from jose import jwt
-from urllib.request import urlopen
 
-AUTH0_DOMAIN = 'udacity-fsnd.auth0.com'
+import requests
+from flask import request
+from jose import jwt
+
+AUTH0_DOMAIN = 'dev-wsb8jitr.auth0.com'
 ALGORITHMS = ['RS256']
-API_AUDIENCE = 'dev'
+API_AUDIENCE = 'coffee'
 
 # AuthError Exception
 '''
@@ -67,24 +67,45 @@ def check_permissions(permission, payload):
     # raise Exception('Not Implemented')
 
 
-'''
-@TODO implement verify_decode_jwt(token) method
-    @INPUTS
-        token: a json web token (string)
-
-    it should be an Auth0 token with key id (kid)
-    it should verify the token using Auth0 /.well-known/jwks.json
-    it should decode the payload from the token
-    it should validate the claims
-    return the decoded payload
-
-    !!NOTE urlopen has a common certificate error described here: https://stackoverflow.com/questions/50236117/scraping-ssl-certificate-verify-failed-error-for-http-en-wikipedia-org
-'''
-
-
 def verify_decode_jwt(token):
-    return token
-    # raise Exception('Not Implemented')
+    jwks = requests.get('https://dev-wsb8jitr.auth0.com/.well-known/jwks.json')
+    jwks = jwks.json()
+
+    try:
+        header = jwt.get_unverified_header(token)
+    except jwt.JWTError:
+        raise AuthError('invalid token', 400)
+
+    rsa_key = {}
+
+    if 'kid' not in header:
+        raise AuthError("'kid' not in header", 401)
+
+    for key in jwks['keys']:
+        if key['kid'] == header['kid']:
+            rsa_key = {
+                'kty': key['kty'],
+                'kid': key['kid'],
+                'use': key['use'],
+                'n': key['n'],
+                'e': key['e']
+            }
+            if rsa_key:
+                try:
+                    payload = jwt.decode(
+                        token,
+                        rsa_key,
+                        algorithms=ALGORITHMS,
+                        audience=API_AUDIENCE,
+                        issuer='https://' + AUTH0_DOMAIN + '/'
+                    )
+                    return payload
+                except jwt.ExpiredSignatureError:
+                    raise AuthError('expired token', 401)
+                except jwt.JWTClaimsError:
+                    raise AuthError('invalid claims', 401)
+                except Exception:
+                    raise AuthError('invalid header', 400)
 
 
 '''
