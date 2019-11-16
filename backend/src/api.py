@@ -12,12 +12,8 @@ setup_db(app)
 CORS(app)
 # db_drop_and_create_all()
 
-# ROUTES
-@app.route('/test')
-@requires_auth()
-def test(payload):
-    return jsonify({'payload': payload})
 
+# ROUTES
 
 @app.route('/drinks')
 def get_all_drinks():
@@ -31,14 +27,19 @@ def get_all_drinks():
     except:
         abort(422)
 
-'''
-@TODO implement endpoint
-    GET /drinks-detail
-        it should require the 'get:drinks-detail' permission
-        it should contain the drink.long() data representation
-    returns status code 200 and json {"success": True, "drinks": drinks} where drinks is the list of drinks
-        or appropriate status code indicating reason for failure
-'''
+
+@app.route('/drinks-detail')
+@requires_auth('get:drinks-detail')
+def get_drinks_detail(payload):
+    try:
+        drinks = Drink.query.all()
+        drinks = [drink.long() for drink in drinks]
+        return jsonify({
+            'success': True,
+            'drinks': drinks
+        }), 200
+    except:
+        abort(422)
 
 '''
 @TODO implement endpoint
@@ -90,7 +91,7 @@ def not_found(error):
     return jsonify({
         "success": False,
         "error": 404,
-        "message": "not_found"
+        "message": "not found"
     }), 404
 
 

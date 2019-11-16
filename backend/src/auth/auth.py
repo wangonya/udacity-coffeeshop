@@ -90,6 +90,8 @@ def verify_decode_jwt(token):
 
 def check_permissions(permission, payload):
     permissions = payload.get('permissions')
+    print(f"permission ===> {permission}")
+    print(f"permissions ===> {permissions}")
     if not permissions or permission not in permissions:
         raise AuthError('unauthorized', 403)
 
