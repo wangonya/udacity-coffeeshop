@@ -2,6 +2,7 @@ import os
 from flask import Flask, request, jsonify, abort
 from sqlalchemy import exc
 import json
+import sqlite3
 from flask_cors import CORS
 
 from .database.models import db_drop_and_create_all, setup_db, Drink
@@ -41,20 +42,14 @@ def get_drinks_detail(payload):
     except:
         abort(422)
 
-'''
-@TODO implement endpoint
-    POST /drinks
-        it should create a new row in the drinks table
-        it should require the 'post:drinks' permission
-        it should contain the drink.long() data representation
-    returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the newly created drink
-        or appropriate status code indicating reason for failure
-'''
+
 @app.route('/drinks', methods=['POST'])
 @requires_auth('post:drinks')
 def post_drinks():
     try:
-        _ = request.get_json()['title'] and request.get_json()['recipe']
+        data = request.get_json()['title'] and request.get_json()['recipe']
+        if not data:
+            abort(400)
     except (TypeError, KeyError):
         abort(400)
 
@@ -71,9 +66,8 @@ def post_drinks():
         return jsonify({
             'success': True,
             'drinks': drink.long()
-        }), 200
-    except Exception as e:
-        print(e)
+        }), 201
+    except:
         abort(422)
 
 '''
@@ -87,6 +81,32 @@ def post_drinks():
     returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the updated drink
         or appropriate status code indicating reason for failure
 '''
+@app.route('/drinks/<int:drink_id>', methods=['PATCH'])
+@requires_auth('patch:drinks')
+def edit_drinks(drink_id):
+    try:
+        data = request.get_json()['title'] or request.get_json()['recipe']
+        if not data:
+            abort(400)
+    except (TypeError, KeyError):
+        abort(400)
+
+    drink = Drink.query.filter_by(id=drink_id).first()
+    if not drink:
+        abort(404)
+
+    try:
+        if request.get_json()['title']:
+            drink.title = request.get_json()['title']
+        if request.get_json()['recipe']:
+            drink.recipe = json.dumps(request.get_json()['recipe'])
+        drink.update()
+        return jsonify({
+            'success': True,
+            'drinks': drink.long()
+        }), 200
+    except Exception:
+        abort(422)
 
 '''
 @TODO implement endpoint
