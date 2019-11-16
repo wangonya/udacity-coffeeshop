@@ -70,44 +70,30 @@ def verify_decode_jwt(token):
                 'n': key['n'],
                 'e': key['e']
             }
-            if rsa_key:
-                try:
-                    payload = jwt.decode(
-                        token,
-                        rsa_key,
-                        algorithms=ALGORITHMS,
-                        audience=API_AUDIENCE,
-                        issuer='https://' + AUTH0_DOMAIN + '/'
-                    )
-                    return payload
-                except jwt.ExpiredSignatureError:
-                    raise AuthError('expired token', 401)
-                except jwt.JWTClaimsError:
-                    raise AuthError('invalid claims', 401)
-                except Exception:
-                    raise AuthError('invalid header', 400)
+            try:
+                payload = jwt.decode(
+                    token,
+                    rsa_key,
+                    algorithms=ALGORITHMS,
+                    audience=API_AUDIENCE,
+                    issuer='https://' + AUTH0_DOMAIN + '/'
+                )
+                return payload
+            except jwt.ExpiredSignatureError:
+                raise AuthError('expired token', 401)
+            except jwt.JWTClaimsError:
+                raise AuthError('invalid claims', 401)
+            except Exception:
+                raise AuthError('invalid header', 400)
+        else:
+            raise AuthError('unauthorized', 401)
 
 
 def check_permissions(permission, payload):
     permissions = payload.get('permissions')
-    print(f"permission ===> {permission}")
-    print(f"permissions ===> {permissions}")
     if not permissions or permission not in permissions:
         raise AuthError('unauthorized', 403)
-
     return True
-
-
-'''
-@TODO implement @requires_auth(permission) decorator method
-    @INPUTS
-        permission: string permission (i.e. 'post:drink')
-
-    it should use the get_token_auth_header method to get the token
-    it should use the verify_decode_jwt method to decode the jwt
-    it should use the check_permissions method validate claims and check the requested permission
-    return the decorator which passes the decoded payload to the decorated method
-'''
 
 
 def requires_auth(permission=''):

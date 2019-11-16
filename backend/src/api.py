@@ -1,8 +1,5 @@
-import os
 from flask import Flask, request, jsonify, abort
-from sqlalchemy import exc
 import json
-import sqlite3
 from flask_cors import CORS
 
 from .database.models import db_drop_and_create_all, setup_db, Drink
@@ -45,7 +42,7 @@ def get_drinks_detail(payload):
 
 @app.route('/drinks', methods=['POST'])
 @requires_auth('post:drinks')
-def post_drinks():
+def post_drinks(payload):
     try:
         data = request.get_json()['title'] and request.get_json()['recipe']
         if not data:
@@ -73,7 +70,7 @@ def post_drinks():
 
 @app.route('/drinks/<int:drink_id>', methods=['PATCH'])
 @requires_auth('patch:drinks')
-def edit_drinks(drink_id):
+def edit_drinks(payload, drink_id):
     try:
         data = request.get_json()['title'] or request.get_json()['recipe']
         if not data:
@@ -86,9 +83,9 @@ def edit_drinks(drink_id):
         abort(404)
 
     try:
-        if request.get_json()['title']:
+        if request.get_json().get('title'):
             drink.title = request.get_json()['title']
-        if request.get_json()['recipe']:
+        if request.get_json().get('recipe'):
             drink.recipe = json.dumps(request.get_json()['recipe'])
         drink.update()
         return jsonify({
@@ -101,7 +98,7 @@ def edit_drinks(drink_id):
 
 @app.route('/drinks/<int:drink_id>', methods=['DELETE'])
 @requires_auth('delete:drinks')
-def delete_drinks(drink_id):
+def delete_drinks(payload, drink_id):
     drink = Drink.query.filter_by(id=drink_id).first()
     if not drink:
         abort(404)
