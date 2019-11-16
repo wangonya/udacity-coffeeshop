@@ -49,24 +49,6 @@ def get_token_auth_header():
     return token
 
 
-'''
-@TODO implement check_permissions(permission, payload) method
-    @INPUTS
-        permission: string permission (i.e. 'post:drink')
-        payload: decoded jwt payload
-
-    it should raise an AuthError if permissions are not included in the payload
-        !!NOTE check your RBAC settings in Auth0
-    it should raise an AuthError if the requested permission string is not in the payload permissions array
-    return true otherwise
-'''
-
-
-def check_permissions(permission, payload):
-    pass
-    # raise Exception('Not Implemented')
-
-
 def verify_decode_jwt(token):
     jwks = requests.get('https://dev-wsb8jitr.auth0.com/.well-known/jwks.json')
     jwks = jwks.json()
@@ -75,8 +57,6 @@ def verify_decode_jwt(token):
         header = jwt.get_unverified_header(token)
     except jwt.JWTError:
         raise AuthError('invalid token', 400)
-
-    rsa_key = {}
 
     if 'kid' not in header:
         raise AuthError("'kid' not in header", 401)
@@ -108,6 +88,14 @@ def verify_decode_jwt(token):
                     raise AuthError('invalid header', 400)
 
 
+def check_permissions(permission, payload):
+    permissions = payload.get('permissions')
+    if not permissions or permission not in permissions:
+        raise AuthError('unauthorized', 403)
+
+    return True
+
+
 '''
 @TODO implement @requires_auth(permission) decorator method
     @INPUTS
@@ -128,7 +116,5 @@ def requires_auth(permission=''):
             payload = verify_decode_jwt(token)
             check_permissions(permission, payload)
             return f(payload, *args, **kwargs)
-
         return wrapper
-
     return requires_auth_decorator
