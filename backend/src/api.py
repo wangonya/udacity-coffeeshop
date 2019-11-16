@@ -50,6 +50,31 @@ def get_drinks_detail(payload):
     returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the newly created drink
         or appropriate status code indicating reason for failure
 '''
+@app.route('/drinks', methods=['POST'])
+@requires_auth('post:drinks')
+def post_drinks():
+    try:
+        _ = request.get_json()['title'] and request.get_json()['recipe']
+    except (TypeError, KeyError):
+        abort(400)
+
+    # drink title must be unique
+    if Drink.query.filter_by(title=request.get_json()['title']).first():
+        abort(409)
+
+    try:
+        Drink(
+            title=request.get_json()['title'],
+            recipe=json.dumps(request.get_json()['recipe'])
+        ).insert()
+        drink = Drink.query.filter_by(title=request.get_json()['title']).first()
+        return jsonify({
+            'success': True,
+            'drinks': drink.long()
+        }), 200
+    except Exception as e:
+        print(e)
+        abort(422)
 
 '''
 @TODO implement endpoint
@@ -93,6 +118,15 @@ def not_found(error):
         "error": 404,
         "message": "not found"
     }), 404
+
+
+@app.errorhandler(409)
+def duplicate(error):
+    return jsonify({
+        "success": False,
+        "error": 409,
+        "message": "duplicate"
+    }), 409
 
 
 @app.errorhandler(422)
