@@ -70,17 +70,7 @@ def post_drinks():
     except:
         abort(422)
 
-'''
-@TODO implement endpoint
-    PATCH /drinks/<id>
-        where <id> is the existing model id
-        it should respond with a 404 error if <id> is not found
-        it should update the corresponding row for <id>
-        it should require the 'patch:drinks' permission
-        it should contain the drink.long() data representation
-    returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the updated drink
-        or appropriate status code indicating reason for failure
-'''
+
 @app.route('/drinks/<int:drink_id>', methods=['PATCH'])
 @requires_auth('patch:drinks')
 def edit_drinks(drink_id):
@@ -108,16 +98,22 @@ def edit_drinks(drink_id):
     except Exception:
         abort(422)
 
-'''
-@TODO implement endpoint
-    DELETE /drinks/<id>
-        where <id> is the existing model id
-        it should respond with a 404 error if <id> is not found
-        it should delete the corresponding row for <id>
-        it should require the 'delete:drinks' permission
-    returns status code 200 and json {"success": True, "delete": id} where id is the id of the deleted record
-        or appropriate status code indicating reason for failure
-'''
+
+@app.route('/drinks/<int:drink_id>', methods=['DELETE'])
+@requires_auth('delete:drinks')
+def delete_drinks(drink_id):
+    drink = Drink.query.filter_by(id=drink_id).first()
+    if not drink:
+        abort(404)
+
+    try:
+        drink.delete()
+        return jsonify({
+            'success': True,
+            'delete': drink_id
+        }), 200
+    except Exception:
+        abort(422)
 
 
 # Error Handling
