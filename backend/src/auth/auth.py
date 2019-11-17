@@ -97,9 +97,22 @@ def check_permissions(permission, payload):
 
 
 def requires_auth(permission=''):
+    """
+    ensures user is authenticated and authorized to access the endpoint
+    :param permission: the permissions required to access the endpoint
+    """
     def requires_auth_decorator(f):
+        """
+        auth decorator to reuse in protecting endpoints
+        :param f: endpoint that we'll be protecting
+        """
         @wraps(f)
         def wrapper(*args, **kwargs):
+            """
+            ensures request has Authorization header with bearer token
+            verifies the given token and checks the permissions embedded within it
+            appropriate exceptions are raised if any step fails, else, access is granted
+            """
             token = get_token_auth_header()
             payload = verify_decode_jwt(token)
             check_permissions(permission, payload)
